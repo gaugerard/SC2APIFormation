@@ -1,0 +1,17 @@
+aiohttp==3.5.4
+async-timeout==3.0.1
+attrs==19.1.0
+chardet==3.0.4
+future==0.17.1
+idna==2.8
+idna-ssl==1.1.0
+multidict==4.5.2
+portpicker==1.3.1
+protobuf==3.7.1
+pyglet==1.3.2
+s2clientprotocol==4.8.6.73620.0
+sc2==0.11.1
+sc2ai==0.0.4
+six==1.12.0
+typing-extensions==3.7.2
+yarl==1.3.0

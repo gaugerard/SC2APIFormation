@@ -12,6 +12,8 @@ class BotTerran(sc2.BotAI):
         :param iteration: in game iteration number. There are approximately 165 iteration per minute.
         :return: execute an action.
         """
+        # Here, we will place all the possible action of our Bot. It will go through them all and if the Bot can
+        # execute it, it will.
 
         # This a a function of sc2 Bot So we don't need to create the complex function that manages the workers.
         await self.distribute_workers()
@@ -27,8 +29,12 @@ class BotTerran(sc2.BotAI):
 
         :return: execute action self.do(command_center.train(SCV)).
         """
+
+        # this condition checks that there is not more than 16 workers (SCV) by base (COMMANDCENTER).
         if self.units(SCV).amount < self.units(COMMANDCENTER).amount*16:
+            # We go through all all command center that is ready and that has no unit to produce (in his queue).
             for command_center in self.units(COMMANDCENTER).ready.noqueue:
+                # If we have enough minerals and vespene gas, we will build an worker with the selected command center.
                 if self.can_afford(SCV):
                     await self.do(command_center.train(SCV))
 
@@ -47,7 +53,6 @@ class BotTerran(sc2.BotAI):
                 if self.can_afford(SUPPLYDEPOT):
                     await self.build(SUPPLYDEPOT, near=command_centers.first)  # specify build + where.
 
-
     async def build_refineries(self):
         """
         Build a refinery if we can afford it and if we have at least a worker.
@@ -55,6 +60,7 @@ class BotTerran(sc2.BotAI):
         :return: execute action self.do(worker.build(REFINERY, vaspene)).
         """
         for command_center in self.units(COMMANDCENTER).ready:
+            # This return all the places where there is a vaspene geyser.
             vaspenes = self.state.vespene_geyser.closer_than(15.0, command_center)  # tells us where the geysers are.
             for vaspene in vaspenes:
                 if not self.can_afford(REFINERY):
@@ -82,4 +88,4 @@ if __name__ == "__main__":
             Bot(Race.Terran, BotTerran()),
             Computer(Race.Zerg, Difficulty.Easy)
         ],
-        realtime=False)  # time in second : 1800sec = 30 min
+        realtime=True)  # Set realtime = False ==> makes the game run faster.

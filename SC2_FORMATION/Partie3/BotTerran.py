@@ -59,12 +59,15 @@ class BotTerran(sc2.BotAI):
 
     async def build_barracks(self):
 
+        # to be able to build a barrack, we need at lest 1 supply_depot ==> see TECH TREE of Terran.
         if self.units(SUPPLYDEPOT).ready.exists:
-
             # create 3 BARRACKS maximum
             if self.units(BARRACKS).amount < 3:
+                # self.already_pending(BARRACKS) checks if a barrack already is under construction .
                 if self.can_afford(BARRACKS) and not self.already_pending(BARRACKS):
+                    # we select a random command_center (to build our barrack near it)
                     cc = self.units(COMMANDCENTER).ready.random
+                    # we build a barrack near the command_center TOWARDS the center of the map at a distance of 8.
                     await self.build(BARRACKS, near=cc.position.towards(self.game_info.map_center, 8))
 
     async def create_army(self):
@@ -74,6 +77,7 @@ class BotTerran(sc2.BotAI):
 
                 if self.can_afford(MARINE) and self.supply_left > 0:
 
+                    # We build (train) a marine in that barrack.
                     await self.do(barrack.train(MARINE))
 
     async def attack(self):
