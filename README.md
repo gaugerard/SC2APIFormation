@@ -1,7 +1,7 @@
 # SC2APIFormation
-Code de la formation sur la librairie Python sc2api.
+Code de la formation sur la Python sc2 API.
 
-Librairie a importer:
+Librairies a importer:
     - sc2
     - sc2ai
 
