@@ -27,6 +27,8 @@ class BotTerran(sc2.BotAI):
         await self.finish_repair_building()
         await self.repair_damage_building()
 
+        await self.expand()
+
         await self.build_barracks()
         await self.create_army()
 
@@ -58,7 +60,6 @@ class BotTerran(sc2.BotAI):
         scv_tags = {scv.add_on_tag for scv in scv_constructing}
 
         if self.units.structure.not_ready.exclude_type(TECHLABS_AND_REACTORS).amount > scv_constructing.amount:
-            print("---------> a building is not finished !")
 
             for building in self.units.structure.not_ready.exclude_type(TECHLABS_AND_REACTORS):
 
@@ -140,6 +141,20 @@ class BotTerran(sc2.BotAI):
                 if not self.units(REFINERY).closer_than(1.0, vaspene).exists:  # if there is not a refinery that exists
                     # close to that vaspene already,
                     await self.do(worker.build(REFINERY, vaspene))
+
+    async def expand(self):
+        """
+        Expand the base by creating a new command center (use a function of bot_ai).
+
+        :return: self.expand_now()
+        """
+
+        # We will be 2 bases maximum
+        if self.units(COMMANDCENTER).amount < 2:
+            # We plan to build a base every 3 min + self.time is in SECOND
+            if self.units(COMMANDCENTER).amount < ((self.time / 60)/3):
+                if self.can_afford(COMMANDCENTER) and not self.already_pending(COMMANDCENTER):
+                    await self.expand_now()
 
     async def build_barracks(self):
         """

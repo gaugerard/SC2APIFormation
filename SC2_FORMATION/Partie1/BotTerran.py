@@ -26,6 +26,7 @@ class BotTerran(sc2.BotAI):
         await self.finish_repair_building()
         await self.repair_damage_building()
 
+
     # THE 2 MOST IMPORTANT FUNCTION ! THIS WILL MAKE YOU GO NUTS IF YOU DON'T HAVE THEM !
     # AND GOOD LUCK TO FIND THEM/CREATE THEM ON YOUR OWN IF YOU JUST STARTED LEARNING SC2API
 
@@ -52,7 +53,6 @@ class BotTerran(sc2.BotAI):
         scv_tags = {scv.add_on_tag for scv in scv_constructing}
 
         if self.units.structure.not_ready.exclude_type(TECHLABS_AND_REACTORS).amount > scv_constructing.amount:
-            print("---------> a building is not finished !")
 
             for building in self.units.structure.not_ready.exclude_type(TECHLABS_AND_REACTORS):
 

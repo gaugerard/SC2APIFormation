@@ -15,6 +15,7 @@ class BotTerran(sc2.BotAI):
 
         self.attacking = False
         self.attacking_units = []
+        self.defend_base = False
 
     async def on_step(self, iteration):
         """
@@ -36,6 +37,8 @@ class BotTerran(sc2.BotAI):
 
         await self.finish_repair_building()
         await self.repair_damage_building()
+
+        await self.expand()
 
         await self.build_barracks()
         await self.create_army()
@@ -102,22 +105,28 @@ class BotTerran(sc2.BotAI):
         Raise a depot if enemy nearby, lower it else.
         :return:
         """
-        # Raise depos when enemies are nearby
-        for supply_depot in self.units(SUPPLYDEPOT).ready:
-            enemy_nearby = False
-            for unit in self.known_enemy_units.not_structure:
-                if unit.position.to2.distance_to(supply_depot.position.to2) < 10:
-                    enemy_nearby = True
 
-            if not enemy_nearby:
+        if self.defend_base:
+            for supply_depot in self.units(SUPPLYDEPOT).ready:
                 await self.do(supply_depot(MORPH_SUPPLYDEPOT_LOWER))
 
-        # Lower depos when no enemies are nearby
-        for supply_depot in self.units(SUPPLYDEPOTLOWERED).ready:
-            for unit in self.known_enemy_units.not_structure:
-                if unit.position.to2.distance_to(supply_depot.position.to2) < 10:
-                    await self.do(supply_depot(MORPH_SUPPLYDEPOT_RAISE))
-                    break
+        else:
+            # Raise depos when enemies are nearby
+            for supply_depot in self.units(SUPPLYDEPOT).ready:
+                enemy_nearby = False
+                for unit in self.known_enemy_units.not_structure:
+                    if unit.position.to2.distance_to(supply_depot.position.to2) < 10:
+                        enemy_nearby = True
+
+                if not enemy_nearby:
+                    await self.do(supply_depot(MORPH_SUPPLYDEPOT_LOWER))
+
+            # Lower depos when no enemies are nearby
+            for supply_depot in self.units(SUPPLYDEPOTLOWERED).ready:
+                for unit in self.known_enemy_units.not_structure:
+                    if unit.position.to2.distance_to(supply_depot.position.to2) < 10:
+                        await self.do(supply_depot(MORPH_SUPPLYDEPOT_RAISE))
+                        break
 
     async def supply_depots(self):
 
@@ -162,7 +171,6 @@ class BotTerran(sc2.BotAI):
         scv_tags = {scv.add_on_tag for scv in scv_constructing}
 
         if self.units.structure.not_ready.exclude_type(TECHLABS_AND_REACTORS).amount > scv_constructing.amount:
-            print("---------> a building is not finished !")
 
             for building in self.units.structure.not_ready.exclude_type(TECHLABS_AND_REACTORS):
 
@@ -190,12 +198,27 @@ class BotTerran(sc2.BotAI):
                         scv = self.units(SCV).ready.random
                         await self.do(scv(SMART, building))
 
+    async def expand(self):
+        """
+        Expand the base by creating a new command center (use a function of bot_ai).
+
+        :return: self.expand_now()
+        """
+
+        # We will be 4 bases maximum
+        if self.units(COMMANDCENTER).amount < 4:
+            # We plan to build a base every 5 min + self.time is in SECOND
+            if self.units(COMMANDCENTER).amount < ((self.time / 60)/5):
+                if self.can_afford(COMMANDCENTER) and not self.already_pending(COMMANDCENTER):
+
+                    await self.expand_now()
+
     async def build_barracks(self):
 
         if self.units(SUPPLYDEPOT).ready.exists or self.units(SUPPLYDEPOTLOWERED).ready.exists:
 
-            # create 3 BARRACKS maximum
-            if self.units(BARRACKS).amount < 5:
+            # create 2 BARRACKS maximum
+            if self.units(BARRACKS).amount < 2:
 
                 if self.can_afford(BARRACKS) and not self.already_pending(BARRACKS):
                     cc = self.units(COMMANDCENTER).ready.random
@@ -227,23 +250,39 @@ class BotTerran(sc2.BotAI):
 
     async def defend(self):
 
-        ramp = self.main_base_ramp.depot_in_middle.towards(self.game_info.map_center, -3)
+        ramp = self.main_base_ramp.depot_in_middle
         # print(ramp.depot_in_middle)
 
-        if self.units(MARINE).idle.amount > 0:
+        if self.units(COMMANDCENTER).not_ready.exists:
 
-            for marine in self.units(MARINE).idle:
+            self.defend_base = True
 
-                if marine.position.to2.distance_to(ramp) > 8:
-                    # await self.do(marine.hold_position())
-                    await self.do(marine.move(ramp))
+            # cc = self.units(COMMANDCENTER).not_ready.first
+            for marine in self.units(MARINE):
 
-                else:
-                    if len(self.known_enemy_units) > 0:
+                # if marine.position.to2.distance_to(cc.position) > 8:
+                if marine.position.to2.distance_to(ramp.towards(self.game_info.map_center, 10)) > 8:
+                    # await self.do(marine.move(cc.position))
+                    await self.do(marine.move(ramp.towards(self.game_info.map_center, 10)))
 
-                        await self.do(marine.hold_position())
-                        # enemy_unit = self.known_enemy_units.closest_to(marine.position)
-                        # await self.do(marine.attack(enemy_unit))
+        else:
+
+            self.defend_base = False
+
+            if self.units(MARINE).amount < 20 and self.units(MARINE).idle.amount > 0:
+
+                for marine in self.units(MARINE).idle:
+
+                    if marine.position.to2.distance_to(ramp.towards(self.game_info.map_center, -3)) > 5:
+                        # await self.do(marine.hold_position())
+                        await self.do(marine.move(ramp.towards(self.game_info.map_center, -3)))
+
+                    else:
+                        if len(self.known_enemy_units) > 0:
+
+                            await self.do(marine.hold_position())
+                            # enemy_unit = self.known_enemy_units.closest_to(marine.position)
+                            # await self.do(marine.attack(enemy_unit))
 
     async def attack(self):
 
@@ -261,12 +300,9 @@ class BotTerran(sc2.BotAI):
 
             self.attacking = True
 
-            for marine in self.units(MARINE).random_group_of(20):
+            for marine in self.units(MARINE).prefer_idle.random_group_of(20):
 
                 self.attacking_units.append(marine.tag)
-
-                print("attackinggg--------------")
-
                 enemy_location = self.enemy_start_locations[0]
                 await self.do(marine.attack(enemy_location))
 
