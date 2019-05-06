@@ -1,7 +1,8 @@
 import sc2
 from sc2 import run_game, maps, Race, Difficulty, position, Result
 from sc2.player import Bot, Computer
-from sc2.constants import SCV, COMMANDCENTER, REFINERY, SUPPLYDEPOT
+from sc2.constants import SCV, COMMANDCENTER, REFINERY, SUPPLYDEPOT, BARRACKS, MARINE, SUPPLYDEPOTLOWERED, SMART, \
+    BARRACKSREACTOR, FACTORYREACTOR, STARPORTREACTOR, REACTOR, BARRACKSTECHLAB, FACTORYTECHLAB, STARPORTTECHLAB, TECHLAB
 
 class BotTerran(sc2.BotAI):
 
@@ -22,10 +23,71 @@ class BotTerran(sc2.BotAI):
         await self.supply_depots()
         await self.build_refineries()
 
+        await self.finish_repair_building()
+        await self.repair_damage_building()
+
+    # THE 2 MOST IMPORTANT FUNCTION ! THIS WILL MAKE YOU GO NUTS IF YOU DON'T HAVE THEM !
+    # AND GOOD LUCK TO FIND THEM/CREATE THEM ON YOUR OWN IF YOU JUST STARTED LEARNING SC2API
+
+    # ----------------------------------------------------------------------------------------
+    # vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+
+    async def finish_repair_building(self):
+        """
+        If a scv dies while constructing a building, another scv will be sent to finish it. big problem before because
+        a supply was never finished, no other would never have been build.
+        :return:
+        """
+
+        REACTORS = {BARRACKSREACTOR, FACTORYREACTOR,
+                    STARPORTREACTOR, REACTOR}
+
+        TECHLABS = {BARRACKSTECHLAB, FACTORYTECHLAB,
+                    STARPORTTECHLAB, TECHLAB}
+
+        TECHLABS_AND_REACTORS = REACTORS.union(TECHLABS)
+
+        scv_constructing = self.units.filter(lambda unit: unit.is_constructing_scv)
+
+        scv_tags = {scv.add_on_tag for scv in scv_constructing}
+
+        if self.units.structure.not_ready.exclude_type(TECHLABS_AND_REACTORS).amount > scv_constructing.amount:
+            print("---------> a building is not finished !")
+
+            for building in self.units.structure.not_ready.exclude_type(TECHLABS_AND_REACTORS):
+
+                if building.name != 'BarracksTechLab':  # reaper grenades are structure.
+
+                    if self.units(SCV).amount > 0:
+
+                        if building.add_on_tag not in scv_tags:
+                            scv = self.units(SCV).ready.random
+                            # SMART = right clicking
+                            await self.do(scv(SMART, building))
+
+    async def repair_damage_building(self):
+
+        scv_constructing = self.units.filter(lambda unit: unit.is_repairing)
+
+        scv_tags = {scv.add_on_tag for scv in scv_constructing}
+
+        for building in self.units.structure.ready:
+
+            if building.health_percentage < 1:
+
+                if self.units(SCV).amount > 0:
+
+                    if building.add_on_tag not in scv_tags:
+                        scv = self.units(SCV).ready.random
+                        # SMART = right clicking
+                        await self.do(scv(SMART, building))
+
+    # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    # ----------------------------------------------------------------------------------------
+
     async def build_workers(self):
         """
-        Build worker under certain conditions related to the number of command center and related to the max number of
-        worker.
+        Build worker under certain conditions related to the number of command center.
 
         :return: execute action self.do(command_center.train(SCV)).
         """
@@ -59,6 +121,7 @@ class BotTerran(sc2.BotAI):
 
         :return: execute action self.do(worker.build(REFINERY, vaspene)).
         """
+
         for command_center in self.units(COMMANDCENTER).ready:
             # This return all the places where there is a vaspene geyser.
             vaspenes = self.state.vespene_geyser.closer_than(15.0, command_center)  # tells us where the geysers are.
