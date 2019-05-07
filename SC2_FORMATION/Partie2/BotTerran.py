@@ -206,4 +206,4 @@ if __name__ == "__main__":
             Bot(Race.Terran, BotTerran()),
             Computer(Race.Zerg, Difficulty.Easy)
         ],
-        realtime=True)  # Set realtime = False ==> makes the game run faster.
+        realtime=False)  # Set realtime = False ==> makes the game run faster.

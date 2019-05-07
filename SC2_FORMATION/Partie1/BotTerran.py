@@ -23,15 +23,15 @@ class BotTerran(sc2.BotAI):
         await self.supply_depots()
         await self.build_refineries()
 
+        await self.expand()
+
         await self.finish_repair_building()
         await self.repair_damage_building()
 
-
-    # THE 2 MOST IMPORTANT FUNCTION ! THIS WILL MAKE YOU GO NUTS IF YOU DON'T HAVE THEM !
+    # THE 2 MOST IMPORTANT FUNCTIONS ! THIS WILL MAKE YOU GO NUTS IF YOU DON'T HAVE THEM !
     # AND GOOD LUCK TO FIND THEM/CREATE THEM ON YOUR OWN IF YOU JUST STARTED LEARNING SC2API
 
     # ----------------------------------------------------------------------------------------
-    # vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
 
     async def finish_repair_building(self):
         """
@@ -82,7 +82,6 @@ class BotTerran(sc2.BotAI):
                         # SMART = right clicking
                         await self.do(scv(SMART, building))
 
-    # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     # ----------------------------------------------------------------------------------------
 
     async def build_workers(self):
@@ -135,6 +134,20 @@ class BotTerran(sc2.BotAI):
                     # close to that vaspene already,
                     await self.do(worker.build(REFINERY, vaspene))
 
+    async def expand(self):
+        """
+        Expand the base by creating a new command center (use a function of bot_ai).
+
+        :return: self.expand_now()
+        """
+
+        # We will be 2 bases maximum
+        if self.units(COMMANDCENTER).amount < 5:
+            # We plan to build a base every 3 min + self.time is in SECOND
+            if self.units(COMMANDCENTER).amount < ((self.time / 60)/3):
+                if self.can_afford(COMMANDCENTER) and not self.already_pending(COMMANDCENTER):
+                    await self.expand_now()
+
 
 if __name__ == "__main__":
 
@@ -151,4 +164,4 @@ if __name__ == "__main__":
             Bot(Race.Terran, BotTerran()),
             Computer(Race.Zerg, Difficulty.Easy)
         ],
-        realtime=True)  # Set realtime = False ==> makes the game run faster.
+        realtime=False)  # Set realtime = False ==> makes the game run faster.

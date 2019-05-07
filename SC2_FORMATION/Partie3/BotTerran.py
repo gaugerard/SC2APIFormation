@@ -226,6 +226,6 @@ if __name__ == "__main__":
         maps.get("AbyssalReefLE"),
         [
             Bot(Race.Terran, BotTerran()),
-            Computer(Race.Zerg, Difficulty.Easy)
+            Computer(Race.Zerg, Difficulty.Medium)
         ],
         realtime=False)  # time in second : 1800sec = 30 min
